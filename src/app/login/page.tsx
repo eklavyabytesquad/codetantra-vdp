@@ -1,15 +1,28 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { Eye, EyeOff, Mail, Lock, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-const LoginPage = () => {
+// Define types for our form state
+interface FormErrors {
+  email: string;
+  password: string;
+  userType: string;
+}
+
+type UserType = 'student' | 'faculty' | 'admin';
+
+const LoginPage: React.FC = () => {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [userType, setUserType] = useState('student'); // Default selection
-  const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState({ email: '', password: '', userType: '' });
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [userType, setUserType] = useState<UserType>('student');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [errors, setErrors] = useState<FormErrors>({
+    email: '',
+    password: '',
+    userType: ''
+  });
 
   // Hardcoded credentials for demonstration
   const validCredentials = {
@@ -18,29 +31,30 @@ const LoginPage = () => {
   };
 
   // Dashboard routes for different user types
-  const dashboardRoutes = {
-    student: '/studentdashbaord',
+  const dashboardRoutes: Record<UserType, string> = {
+    student: '/studentdashboard',
     faculty: '/facultydashboard',
     admin: '/admindashboard'
   };
 
-  const validateForm = () => {
+  const validateForm = (): boolean => {
     let isValid = true;
-    const newErrors = { email: '', password: '', userType: '' };
+    const newErrors: FormErrors = {
+      email: '',
+      password: '',
+      userType: ''
+    };
 
-    // Email validation (in this case, checking for 'admin')
     if (!email) {
       newErrors.email = 'Username is required';
       isValid = false;
     }
 
-    // Password validation (in this case, checking for 'admin')
     if (!password) {
       newErrors.password = 'Password is required';
       isValid = false;
     }
 
-    // User type validation
     if (!userType) {
       newErrors.userType = 'Please select a user type';
       isValid = false;
@@ -50,7 +64,7 @@ const LoginPage = () => {
     return isValid;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (validateForm()) {
       // Check credentials
@@ -93,7 +107,7 @@ const LoginPage = () => {
                 <select
                   id="userType"
                   value={userType}
-                  onChange={(e) => setUserType(e.target.value)}
+                  onChange={(e) => setUserType(e.target.value as UserType)}
                   className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 >
                   <option value="student">Student</option>
@@ -101,9 +115,12 @@ const LoginPage = () => {
                   <option value="admin">Admin</option>
                 </select>
               </div>
+              {errors.userType && (
+                <p className="mt-1 text-sm text-red-600">{errors.userType}</p>
+              )}
             </div>
 
-            {/* Username field (previously email) */}
+            {/* Username field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Username
@@ -205,7 +222,7 @@ const LoginPage = () => {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-2 bg-white text-gray-500">
-                Dont have an account?
+                Don't have an account?
               </span>
             </div>
           </div>
