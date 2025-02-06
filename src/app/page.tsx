@@ -5,11 +5,19 @@ import Link from 'next/link';
 import Navbar from '../components/common/navbar';
 import Footer from '../components/common/footer';
 import { ArrowRight, Code, Users, Brain, Rocket, BookOpen, Target, Trophy } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
-export default function Home() {
-  // Animation on scroll effect
+// Define interfaces for better type safety
+interface Feature {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  color: 'indigo' | 'purple';
+}
+
+const HomePage: React.FC = () => {
   useEffect(() => {
-    const observerOptions = {
+    const observerOptions: IntersectionObserverInit = {
       threshold: 0.1,
       rootMargin: '0px'
     };
@@ -23,12 +31,53 @@ export default function Home() {
       });
     }, observerOptions);
 
-    document.querySelectorAll('.animate-on-scroll').forEach((elem) => {
+    const elements = document.querySelectorAll('.animate-on-scroll');
+    elements.forEach((elem) => {
       observer.observe(elem);
     });
 
     return () => observer.disconnect();
   }, []);
+
+  // Define features array with proper typing
+  const features: Feature[] = [
+    {
+      icon: Code,
+      title: "Learn to Code",
+      description: "Start your coding journey with structured learning paths and hands-on projects.",
+      color: "indigo"
+    },
+    {
+      icon: Brain,
+      title: "Practice & Grow",
+      description: "Strengthen your skills with coding challenges and real-world problems.",
+      color: "purple"
+    },
+    {
+      icon: Rocket,
+      title: "Build Projects",
+      description: "Create amazing projects and build your portfolio with fellow students.",
+      color: "indigo"
+    },
+    {
+      icon: BookOpen,
+      title: "Access Resources",
+      description: "Get access to curated learning materials and documentation.",
+      color: "purple"
+    },
+    {
+      icon: Target,
+      title: "Set Goals",
+      description: "Track your progress and achieve your coding milestones.",
+      color: "indigo"
+    },
+    {
+      icon: Trophy,
+      title: "Earn Certificates",
+      description: "Get recognized for your achievements and skills.",
+      color: "purple"
+    }
+  ];
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
@@ -68,48 +117,10 @@ export default function Home() {
         {/* Feature Cards with enhanced design */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Code,
-                title: "Learn to Code",
-                description: "Start your coding journey with structured learning paths and hands-on projects.",
-                color: "indigo"
-              },
-              {
-                icon: Brain,
-                title: "Practice & Grow",
-                description: "Strengthen your skills with coding challenges and real-world problems.",
-                color: "purple"
-              },
-              {
-                icon: Rocket,
-                title: "Build Projects",
-                description: "Create amazing projects and build your portfolio with fellow students.",
-                color: "indigo"
-              },
-              {
-                icon: BookOpen,
-                title: "Access Resources",
-                description: "Get access to curated learning materials and documentation.",
-                color: "purple"
-              },
-              {
-                icon: Target,
-                title: "Set Goals",
-                description: "Track your progress and achieve your coding milestones.",
-                color: "indigo"
-              },
-              {
-                icon: Trophy,
-                title: "Earn Certificates",
-                description: "Get recognized for your achievements and skills.",
-                color: "purple"
-              }
-            ].map((feature, index) => (
+            {features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="animate-on-scroll opacity-0 transform translate-y-8 transition-all duration-1000 delay-[var(--delay)]"
-                style={{ '--delay': `${index * 100}ms` }}
+                className={`animate-on-scroll opacity-0 transform translate-y-8 transition-all duration-1000 transition-delay-${index * 100}`}
               >
                 <div className="relative group">
                   <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl opacity-50 blur-xl group-hover:opacity-75 transition-opacity duration-300"></div>
@@ -130,4 +141,6 @@ export default function Home() {
       <Footer />
     </main>
   );
-}
+};
+
+export default HomePage;
