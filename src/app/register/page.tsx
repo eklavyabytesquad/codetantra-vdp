@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '../utils/supabase';
-import { UserCircle, Mail, Lock, Phone, Building, BookOpen, GraduationCap } from 'lucide-react';
+import { UserCircle, Mail, Lock, Phone, Building, GraduationCap } from 'lucide-react';
 
 export default function Register() {
   const router = useRouter();
