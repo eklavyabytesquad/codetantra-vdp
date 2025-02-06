@@ -28,9 +28,9 @@ const Navbar = () => {
   ];
 
   const loginOptions = [
-    { name: 'Student Login', icon: GraduationCap, href: '/login/student' },
-    { name: 'Faculty Login', icon: Users, href: '/login/faculty' },
-    { name: 'Admin Login', icon: UserCircle, href: '/login/admin' },
+    { name: 'Student Login', icon: GraduationCap, href: '/login' },
+    { name: 'Faculty Login', icon: Users, href: '/login' },
+    { name: 'Admin Login', icon: UserCircle, href: '/login' },
   ];
 
   return (
