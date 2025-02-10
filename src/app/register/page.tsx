@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserCircle, Mail, Lock, ChevronDown, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -9,6 +9,11 @@ import supabase from '../utils/supabase';
 // Define the allowed user roles to match our database constraints
 type UserRole = 'student' | 'faculty' | 'admin' | 'superadmin';
 
+// Define custom error type for better type safety
+interface RegistrationError extends Error {
+  message: string;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   
@@ -16,7 +21,7 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '', // Added for password confirmation
+    confirmPassword: '',
     userRole: '' as UserRole | ''
   });
 
@@ -88,7 +93,7 @@ export default function RegisterPage() {
         password: formData.password,
         options: {
           data: {
-            user_role: formData.userRole // This matches our trigger function
+            user_role: formData.userRole
           }
         }
       });
@@ -100,9 +105,10 @@ export default function RegisterPage() {
         router.push('/login?registration=success');
       }
 
-    } catch (err: any) {
-      setError(err.message);
-      console.error('Registration error:', err);
+    } catch (err) {
+      const error = err as RegistrationError;
+      setError(error.message);
+      console.error('Registration error:', error);
     } finally {
       setLoading(false);
     }

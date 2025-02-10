@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, UserCircle, Check, AlertCircle } from 'lucide-react';
+import { Mail, Lock, UserCircle, Check, AlertCircle, Home } from 'lucide-react';
 import Link from 'next/link';
 import supabase from '../utils/supabase';
 
 // Define the type for user roles to match our database
 type UserRole = 'student' | 'faculty' | 'admin' | 'superadmin';
+
+// Define error type for better type safety
+interface LoginError extends Error {
+  message: string;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,7 +21,7 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    userRole: '' as UserRole | '' // Using userRole to match database field
+    userRole: '' as UserRole | ''
   });
 
   // State for form validation and UI feedback
@@ -69,7 +74,7 @@ export default function LoginPage() {
         // After successful authentication, verify user role
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('user_role') // Using user_role to match our new table structure
+          .select('user_role')
           .eq('id', authData.user.id)
           .single();
 
@@ -85,10 +90,11 @@ export default function LoginPage() {
         // Successfully validated, redirect to appropriate dashboard
         setTimeout(() => {
           router.push(handleDashboardRouting(profileData.user_role));
-        }, 1000); // Brief delay to show success state
+        }, 1000);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const error = err as LoginError;
+      setError(error.message);
       setIsValidated(false);
     } finally {
       setLoading(false);
@@ -97,6 +103,15 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
+      {/* Home Button */}
+      <Link
+        href="/"
+        className="absolute top-4 left-4 p-2 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50"
+      >
+        <Home className="h-5 w-5" />
+        <span className="font-medium">Back to Home</span>
+      </Link>
+
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Header Section */}
@@ -213,7 +228,7 @@ export default function LoginPage() {
                 Forgot your password?
               </Link>
               <p className="text-sm text-gray-500">
-                Don't have an account?{' '}
+                Do not have an account?{' '}
                 <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
                   Create account
                 </Link>
