@@ -1,10 +1,10 @@
-// File: app/login/page.tsx
+
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, UserCircle } from 'lucide-react';
-import bcrypt from 'bcryptjs';
 import supabase from '../utils/supabase';
+
 
 interface LoginFormData {
   email: string;
