@@ -1,129 +1,131 @@
+// File: app/login/page.tsx
 "use client";
-import React, { useState, FormEvent } from 'react';
-import { Eye, EyeOff, Mail, Lock, Users } from 'lucide-react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Mail, Lock, UserCircle } from 'lucide-react';
+import bcrypt from 'bcryptjs';
+import supabase from '../utils/supabase';
 
-// Define types for our form state
-interface FormErrors {
+interface LoginFormData {
   email: string;
   password: string;
-  userType: string;
+  role: string;
 }
 
-type UserType = 'student' | 'faculty' | 'admin';
-
-const LoginPage: React.FC = () => {
+export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [userType, setUserType] = useState<UserType>('student');
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [errors, setErrors] = useState<FormErrors>({
+  const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
-    userType: ''
+    role: 'student'
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Hardcoded credentials for demonstration
-  const validCredentials = {
-    email: 'admin',
-    password: 'admin'
-  };
-
-  // Dashboard routes for different user types
-  const dashboardRoutes: Record<UserType, string> = {
-    student: '/studentdashboard',
-    faculty: '/facultydashboard',
-    admin: '/admindashboard'
-  };
-
-  const validateForm = (): boolean => {
-    let isValid = true;
-    const newErrors: FormErrors = {
-      email: '',
-      password: '',
-      userType: ''
-    };
-
-    if (!email) {
-      newErrors.email = 'Username is required';
-      isValid = false;
-    }
-
-    if (!password) {
-      newErrors.password = 'Password is required';
-      isValid = false;
-    }
-
-    if (!userType) {
-      newErrors.userType = 'Please select a user type';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      // Check credentials
-      if (email === validCredentials.email && password === validCredentials.password) {
-        // Redirect to appropriate dashboard based on user type
-        router.push(dashboardRoutes[userType]);
-      } else {
-        setErrors({
-          ...errors,
-          email: 'Invalid credentials',
-          password: 'Invalid credentials'
-        });
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Starting login process for:', formData.email);
+
+      // 1. First authenticate with Supabase Auth
+      console.log('Attempting Supabase authentication...');
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (authError) {
+        console.error('Supabase auth error:', authError);
+        throw new Error('Authentication failed. Please check your credentials.');
       }
+
+      console.log('Supabase authentication successful');
+
+      // 2. Check if user exists in our users table with correct role
+      console.log('Fetching user data from users table...');
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', formData.email)
+        .eq('role', formData.role)
+        .single();
+
+      console.log('User data fetch result:', { userData, userError });
+
+      if (userError || !userData) {
+        console.error('User data fetch error:', userError);
+        throw new Error('Invalid role selected for this account');
+      }
+
+      // 3. Update session information
+      console.log('Updating session information...');
+      const now = new Date().toISOString();
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          last_sign_in_at: now,
+          current_sign_in_at: now,
+          sign_in_count: (userData.sign_in_count || 0) + 1,
+          current_session_id: authData.session?.access_token,
+          metadata: {
+            ...userData.metadata,
+            last_login: now,
+            user_agent: window.navigator.userAgent
+          }
+        })
+        .eq('id', userData.id);
+
+      if (updateError) {
+        console.error('Session update error:', updateError);
+        // Don't throw here - non-critical update
+      }
+
+      // 4. Redirect based on role
+      console.log('Redirecting to dashboard for role:', userData.role);
+      const dashboardRoutes: Record<string, string> = {
+        student: '/studentdashboard',
+        teacher: '/teacherdashboard',
+        admin: '/admindashboard',
+        super_admin: '/superadmindashboard'
+      };
+
+      router.push(dashboardRoutes[userData.role] || '/');
+
+    } catch (err) {
+      console.error('Login process error:', err);
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white rounded-xl shadow-lg p-8">
+        <div className="text-center">
+          <UserCircle className="mx-auto h-12 w-12 text-indigo-600" />
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">
             Welcome back
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Please sign in to your account
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to your account
           </p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
-            {/* User Type Selection */}
-            <div>
-              <label htmlFor="userType" className="block text-sm font-medium text-gray-700">
-                Select User Type
-              </label>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Users className="h-5 w-5 text-gray-400" />
-                </div>
-                <select
-                  id="userType"
-                  value={userType}
-                  onChange={(e) => setUserType(e.target.value as UserType)}
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                >
-                  <option value="student">Student</option>
-                  <option value="faculty">Faculty</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              {errors.userType && (
-                <p className="mt-1 text-sm text-red-600">{errors.userType}</p>
-              )}
-            </div>
 
-            {/* Username field */}
+        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Username
+              <label htmlFor="email" className="block text-sm font-medium text-gray-900">
+                Email Address
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -131,24 +133,18 @@ const LoginPage: React.FC = () => {
                 </div>
                 <input
                   id="email"
-                  name="email"
-                  type="text"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                  placeholder="Enter username (admin)"
+                  type="email"
+                  required
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="your.name@srmist.edu.in"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
             </div>
 
-            {/* Password field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-900">
                 Password
               </label>
               <div className="mt-1 relative">
@@ -157,31 +153,31 @@ const LoginPage: React.FC = () => {
                 </div>
                 <input
                   id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`appearance-none rounded-lg relative block w-full pl-10 px-3 py-2 border ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                  placeholder="Enter password (admin)"
+                  type="password"
+                  required
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
                 />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
-                  )}
-                </button>
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
+            </div>
+
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-900">
+                Role
+              </label>
+              <select
+                id="role"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                value={formData.role}
+                onChange={(e) => setFormData({...formData, role: e.target.value})}
+              >
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
             </div>
           </div>
 
@@ -189,9 +185,8 @@ const LoginPage: React.FC = () => {
             <div className="flex items-center">
               <input
                 id="remember-me"
-                name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                 Remember me
@@ -199,46 +194,30 @@ const LoginPage: React.FC = () => {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+              <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Forgot your password?
               </a>
             </div>
           </div>
 
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-            >
-              Sign in
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
         </form>
 
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">
-                Dont have an account?
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <a
-              href="#"
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-            >
-              Create new account
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+              Register here
             </a>
-          </div>
+          </p>
         </div>
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}
