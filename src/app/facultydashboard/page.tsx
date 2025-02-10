@@ -13,9 +13,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import Image from 'next/image';
 
-// Mock data for the performance graph
 const performanceData = [
   { month: 'Jan', python: 82, cpp: 75, dsa: 68 },
   { month: 'Feb', python: 85, cpp: 78, dsa: 72 },
