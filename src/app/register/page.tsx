@@ -1,68 +1,89 @@
 // File: app/register/page.tsx
 "use client";
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import bcrypt from 'bcryptjs';
 import supabase from '../utils/supabase';
 import { Mail, Lock, UserCircle } from 'lucide-react';
+import Link from 'next/link';
+
+// Define types for form data and roles
+type UserRole = 'student' | 'teacher' | 'admin' | 'super_admin';
+
+interface RegisterFormData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: UserRole;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  
+  // Initialize form state with typed interface
+  const [formData, setFormData] = useState<RegisterFormData>({
     email: '',
     password: '',
     confirmPassword: '',
     role: 'student'
   });
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const validateEmail = (email: string) => {
+  // Validate SRM email domain
+  const validateEmail = (email: string): boolean => {
     const emailRegex = /@srmist\.edu\.in$/;
     return emailRegex.test(email);
   };
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      // Validate email domain
+      // Email validation
       if (!validateEmail(formData.email)) {
         throw new Error('Please use your @srmist.edu.in email address');
       }
 
-      // Validate password match
+      // Password validation
       if (formData.password !== formData.confirmPassword) {
         throw new Error('Passwords do not match');
       }
 
-      // Hash password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(formData.password, salt);
+      if (formData.password.length < 6) {
+        throw new Error('Password must be at least 6 characters long');
+      }
 
-      // Sign up the user
+      // Sign up with Supabase auth - includes role in metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            role: formData.role // Store role in auth metadata
+          }
+        }
       });
 
       if (authError) throw authError;
 
       if (authData.user) {
-        // Insert into users table with hashed password
+        // Create user profile in users table (without password)
         const { error: insertError } = await supabase
           .from('users')
           .insert({
             id: authData.user.id,
             email: formData.email,
-            role: formData.role,
-            password: hashedPassword
+            role: formData.role
           });
 
         if (insertError) throw insertError;
 
+        // Redirect to login page after successful registration
         router.push('/login');
       }
     } catch (err) {
@@ -125,6 +146,7 @@ export default function RegisterPage() {
                   id="password"
                   type="password"
                   required
+                  minLength={6}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="••••••••"
                   value={formData.password}
@@ -145,6 +167,7 @@ export default function RegisterPage() {
                   id="confirmPassword"
                   type="password"
                   required
+                  minLength={6}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   placeholder="••••••••"
                   value={formData.confirmPassword}
@@ -161,7 +184,7 @@ export default function RegisterPage() {
                 id="role"
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 value={formData.role}
-                onChange={(e) => setFormData({...formData, role: e.target.value})}
+                onChange={(e) => setFormData({...formData, role: e.target.value as UserRole})}
               >
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
@@ -183,9 +206,9 @@ export default function RegisterPage() {
         <div className="text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{' '}
-            <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
               Sign in
-            </a>
+            </Link>
           </p>
         </div>
       </div>
