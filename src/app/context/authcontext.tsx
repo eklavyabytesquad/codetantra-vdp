@@ -23,32 +23,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
+  
   useEffect(() => {
-    // Subscribe to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null);
+        console.log('Auth state changed:', { event, user: session?.user });
         
+        setUser(session?.user ?? null);
+  
         if (session?.user) {
-          // Fetch user role from profiles table
+          console.log('Fetching user role for:', session.user.email);
+          
           const { data: profileData, error } = await supabase
             .from('profiles')
             .select('user_role')
             .eq('id', session.user.id)
             .single();
-
-          if (!error && profileData) {
+  
+          if (error) {
+            console.error('Error fetching user role:', error);
+          } else {
+            console.log('User role data:', profileData);
             setUserRole(profileData.user_role);
           }
         } else {
+          console.log('No active session, clearing user role');
           setUserRole(null);
         }
-        
+  
         setLoading(false);
       }
     );
-
+  
     return () => {
       subscription.unsubscribe();
     };
