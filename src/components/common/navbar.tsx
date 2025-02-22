@@ -20,7 +20,7 @@ const Navbar = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const menuItems = [
-    { name: 'Learn', icon: BookOpen, href: '/learn' },
+    { name: 'Learn', icon: BookOpen, href: '/courses' },
     { name: 'Practice', icon: Code, href: '/practice' },
     { name: 'Community', icon: Users, href: '/community' },
     { name: 'Resources', icon: Library, href: '/resources' },
@@ -34,21 +34,18 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed w-full z-50 backdrop-blur-md bg-white/70 dark:bg-gray-900/70 border-b border-gray-200/20 shadow-lg">
+    <div className="fixed w-full z-50 backdrop-blur-md bg-white/70 dark:bg-gray-900/70 border-b border-gray-200/20 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo and brand name */}
           <div className="flex items-center space-x-3">
             <div className="text-2xl font-bold relative">
               <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-transparent bg-clip-text drop-shadow-sm">
                 SRM CodeHub
               </span>
-              {/* Decorative element */}
               <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full"></div>
             </div>
           </div>
 
-          {/* Desktop menu */}
           <div className="hidden md:flex items-center space-x-8">
             {menuItems.map((item) => (
               <Link
@@ -61,7 +58,6 @@ const Navbar = () => {
               </Link>
             ))}
 
-            {/* Login Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setIsLoginOpen(!isLoginOpen)}
@@ -69,10 +65,9 @@ const Navbar = () => {
               >
                 <UserCircle className="h-5 w-5" />
                 <span className="font-medium">Login</span>
-                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isLoginOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className="h-4 w-4 transition-transform duration-200" style={{ transform: isLoginOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
               </button>
 
-              {/* Apple-style dropdown */}
               {isLoginOpen && (
                 <div className="absolute right-0 mt-2 w-56 rounded-lg backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 shadow-lg ring-1 ring-black/5 dark:ring-white/10 p-1">
                   {loginOptions.map((option) => (
@@ -91,7 +86,6 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -102,7 +96,6 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile menu */}
         {isOpen && (
           <div className="md:hidden pb-4 backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 rounded-lg mt-2">
             {menuItems.map((item) => (
@@ -132,7 +125,7 @@ const Navbar = () => {
           </div>
         )}
       </div>
-    </nav>
+    </div>
   );
 };
 
